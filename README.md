@@ -4,7 +4,9 @@ A small browser-based **Space Invaders** clone, built with [p5.js](https://p5js.
 
 ## Play
 
-Open the page, then use:
+🎮 **Live game:** https://lucidbard.github.io/dhsi/
+
+Then use:
 
 - **Left / Right** arrows or **A / D** to move the ship
 - **Space** to shoot
