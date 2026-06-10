@@ -1,0 +1,64 @@
+/* Center the game and give it a retro arcade feel. */
+:root {
+  --bg: #000;
+  --fg: #0f0;
+  --accent: #ffcc00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Courier New", Courier, monospace;
+  min-height: 100vh;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+main {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+h1 {
+  letter-spacing: 0.4em;
+  margin: 0 0 1rem;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+}
+
+#game-container {
+  display: inline-block;
+  border: 2px solid var(--fg);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+  line-height: 0;
+}
+
+#game-container canvas {
+  display: block;
+}
+
+.instructions {
+  margin-top: 1rem;
+  color: var(--fg);
+  opacity: 0.85;
+}
+
+.footer {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.footer a {
+  color: var(--accent);
+}
