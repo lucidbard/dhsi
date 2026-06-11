@@ -26,6 +26,42 @@ const DEFAULT_CONFIG = Object.freeze({
 });
 const config = { ...DEFAULT_CONFIG };
 
+// ---------- Genie Mode bridge ----------
+// genie.js (the chat panel on genie.html) talks to the game exclusively
+// through this object. Inert in classic mode: nothing ever calls it.
+const genie = {
+  hooks: { onUpdate: [], onDraw: [] },
+  activeWishes: [], // { text, code } per granted wish, sent back in prompts
+  onPhaseChange: null, // set by genie.js; called with "wishing" | "combat"
+  onHookError: null, // set by genie.js; called with an error message
+  applyWish(code) {
+    try {
+      new Function(code)();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  },
+  resetEffects() {
+    this.hooks.onUpdate.length = 0;
+    this.hooks.onDraw.length = 0;
+    this.activeWishes.length = 0;
+    Object.assign(config, DEFAULT_CONFIG);
+  },
+};
+
+// Run wish hooks, dropping any that throw so one bad spell can't freeze the game.
+function runHooks(list) {
+  for (let i = list.length - 1; i >= 0; i--) {
+    try {
+      list[i]();
+    } catch (err) {
+      list.splice(i, 1);
+      if (genie.onHookError) genie.onHookError(err.message);
+    }
+  }
+}
+
 // ---------- Game state ----------
 let player;
 let bullets = [];
@@ -65,6 +101,7 @@ function buildStarField() {
 }
 
 function resetGame() {
+  genie.resetEffects();
   player = {
     x: width / 2,
     y: height - 40,

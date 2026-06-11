@@ -39,6 +39,46 @@
         return ok;
       });
 
+      // --- Task 2: genie bridge object ---
+      check("genie object exists", () => typeof genie === "object" && genie !== null);
+      check("hooks arrays exist", () =>
+        Array.isArray(genie.hooks.onUpdate) && Array.isArray(genie.hooks.onDraw));
+      check("applyWish returns ok and writes config", () => {
+        const r = genie.applyWish("config.playerSpeed = 12;");
+        return r.ok === true && config.playerSpeed === 12;
+      });
+      check("applyWish reads live game state", () => {
+        const r = genie.applyWish("window.__got = player.x;");
+        return r.ok === true && window.__got === player.x;
+      });
+      check("applyWish captures errors", () => {
+        const r = genie.applyWish("this is not javascript");
+        return r.ok === false && typeof r.error === "string" && r.error.length > 0;
+      });
+      check("fireBullet reads config live", () => {
+        config.bulletSpeed = 99;
+        bullets.length = 0;
+        fireBullet();
+        const ok = bullets.length === 1 && bullets[0].vy === -99;
+        bullets.length = 0;
+        config.bulletSpeed = 7;
+        return ok;
+      });
+      check("resetEffects restores config and clears hooks/wishes", () => {
+        genie.hooks.onUpdate.push(() => {});
+        genie.activeWishes.push({ text: "t", code: "" });
+        genie.resetEffects();
+        return config.playerSpeed === 5 &&
+          genie.hooks.onUpdate.length === 0 &&
+          genie.activeWishes.length === 0;
+      });
+      check("resetGame clears effects", () => {
+        config.bulletSpeed = 99;
+        genie.hooks.onDraw.push(() => {});
+        resetGame();
+        return config.bulletSpeed === 7 && genie.hooks.onDraw.length === 0;
+      });
+
       report();
     }
   </script>
