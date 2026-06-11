@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="game-container"></div>
+  <script>window.GENIE_MODE = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="../sketch.js"></script>
+  <script src="harness.js"></script>
+  <script>
+    // Wait for p5 to run setup(), then stop its draw loop so manual
+    // draw() calls in later checks are deterministic.
+    window.addEventListener("load", () => setTimeout(run, 500));
+
+    function run() {
+      noLoop();
+
+      // --- Task 1: mutable config replaces tuning consts ---
+      check("config exists", () => typeof config === "object" && config !== null);
+      check("config.playerSpeed default", () => config.playerSpeed === 5);
+      check("config.bulletSpeed default", () => config.bulletSpeed === 7);
+      check("config.enemyBulletSpeed default", () => config.enemyBulletSpeed === 4);
+      check("config.enemyRows default", () => config.enemyRows === 5);
+      check("config.enemyCols default", () => config.enemyCols === 8);
+      check("config.enemyHSpacing default", () => config.enemyHSpacing === 48);
+      check("config.enemyVSpacing default", () => config.enemyVSpacing === 40);
+      check("config.enemyStartY default", () => config.enemyStartY === 80);
+      check("config.enemyBaseDrop default", () => config.enemyBaseDrop === 12);
+      check("config.enemyFireChance default", () => config.enemyFireChance === 0.008);
+      check("config.enemyShootersPerRow default", () => config.enemyShootersPerRow === 2);
+      check("old consts deleted", () =>
+        typeof PLAYER_SPEED === "undefined" && typeof ENEMY_FIRE_CHANCE === "undefined");
+      check("game still sets up (5x8 enemies spawned)", () => enemies.length === 40);
+      check("config drives spawning", () => {
+        config.enemyRows = 2;
+        spawnEnemies();
+        const ok = enemies.length === 16;
+        config.enemyRows = 5;
+        spawnEnemies();
+        return ok;
+      });
+
+      report();
+    }
+  </script>
+</body>
+</html>

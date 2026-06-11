@@ -8,17 +8,23 @@
 // ---------- Game constants ----------
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
-const PLAYER_SPEED = 5;
-const BULLET_SPEED = 7;
-const ENEMY_BULLET_SPEED = 4;
-const ENEMY_ROWS = 5;
-const ENEMY_COLS = 8;
-const ENEMY_H_SPACING = 48;
-const ENEMY_V_SPACING = 40;
-const ENEMY_START_Y = 80;
-const ENEMY_BASE_DROP = 12;
-const ENEMY_FIRE_CHANCE = 0.008; // per enemy per frame
-const ENEMY_SHOOTERS_PER_ROW = 2;
+
+// Tunable gameplay values. Genie Mode wishes may rewrite these at runtime;
+// genie.resetEffects() restores them from DEFAULT_CONFIG.
+const DEFAULT_CONFIG = Object.freeze({
+  playerSpeed: 5,
+  bulletSpeed: 7,
+  enemyBulletSpeed: 4,
+  enemyRows: 5,
+  enemyCols: 8,
+  enemyHSpacing: 48,
+  enemyVSpacing: 40,
+  enemyStartY: 80,
+  enemyBaseDrop: 12,
+  enemyFireChance: 0.008, // per enemy per frame
+  enemyShootersPerRow: 2,
+});
+const config = { ...DEFAULT_CONFIG };
 
 // ---------- Game state ----------
 let player;
@@ -81,14 +87,14 @@ function resetGame() {
 
 function spawnEnemies() {
   enemies = [];
-  const startX = (width - (ENEMY_COLS - 1) * ENEMY_H_SPACING) / 2;
-  for (let r = 0; r < ENEMY_ROWS; r++) {
+  const startX = (width - (config.enemyCols - 1) * config.enemyHSpacing) / 2;
+  for (let r = 0; r < config.enemyRows; r++) {
     // Top rows are worth more (squid/crab/crab/crab/crab in the original).
-    const points = [40, 30, 20, 20, 10][r];
-    for (let c = 0; c < ENEMY_COLS; c++) {
+    const points = [40, 30, 20, 20, 10][r % 5];
+    for (let c = 0; c < config.enemyCols; c++) {
       enemies.push({
-        x: startX + c * ENEMY_H_SPACING,
-        y: ENEMY_START_Y + r * ENEMY_V_SPACING + (level - 1) * 12,
+        x: startX + c * config.enemyHSpacing,
+        y: config.enemyStartY + r * config.enemyVSpacing + (level - 1) * 12,
         w: 28,
         h: 22,
         row: r,
@@ -169,7 +175,7 @@ function fireBullet() {
     y: player.y - player.h / 2,
     w: 3,
     h: 10,
-    vy: -BULLET_SPEED,
+    vy: -config.bulletSpeed,
     fromPlayer: true,
   });
 }
@@ -181,18 +187,18 @@ function enemyFire() {
   if (!alive.length) return;
   // Prefer enemies in lower rows by weighting the sample.
   const shooters = [];
-  for (let i = 0; i < ENEMY_SHOOTERS_PER_ROW; i++) {
+  for (let i = 0; i < config.enemyShootersPerRow; i++) {
     const pick = random(alive);
     shooters.push(pick);
   }
   for (const s of shooters) {
-    if (random() < ENEMY_FIRE_CHANCE) {
+    if (random() < config.enemyFireChance) {
       enemyBullets.push({
         x: s.x,
         y: s.y + s.h / 2,
         w: 3,
         h: 10,
-        vy: ENEMY_BULLET_SPEED,
+        vy: config.enemyBulletSpeed,
       });
     }
   }
@@ -304,10 +310,10 @@ function drawVictory() {
 
 function updatePlayer() {
   if (keys[LEFT_ARROW] || keys[65]) {
-    player.x -= PLAYER_SPEED;
+    player.x -= config.playerSpeed;
   }
   if (keys[RIGHT_ARROW] || keys[68]) {
-    player.x += PLAYER_SPEED;
+    player.x += config.playerSpeed;
   }
   player.x = constrain(player.x, player.w / 2, width - player.w / 2);
 }
@@ -337,7 +343,7 @@ function updateEnemies() {
     if (hitEdge) {
       enemyDir *= -1;
       for (const e of alive) {
-        e.y += ENEMY_BASE_DROP;
+        e.y += config.enemyBaseDrop;
       }
       enemySpeed += 0.15;
     }

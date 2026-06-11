@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="game-container"></div>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="../sketch.js"></script>
+  <script src="harness.js"></script>
+  <script>
+    window.addEventListener("load", () => setTimeout(run, 500));
+
+    function run() {
+      noLoop();
+
+      // --- Task 1: refactor must not break the classic game ---
+      check("GENIE_MODE is off", () => !window.GENIE_MODE);
+      check("game sets up (5x8 enemies spawned)", () => enemies.length === 40);
+      check("barriers spawned", () => barriers.length > 0);
+      check("player exists", () => typeof player === "object" && player.x === 240);
+
+      report();
+    }
+  </script>
+</body>
+</html>
