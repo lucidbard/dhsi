@@ -55,7 +55,10 @@ const config = {
 ```
 
 `GAME_WIDTH` and `GAME_HEIGHT` stay `const`. All game code reads from `config`
-instead of the old constants. `config` is reset to defaults on full restart.
+instead of the old constants, and the old `const` declarations are **deleted
+entirely** — any reference the refactor misses throws a loud `ReferenceError`
+instead of silently using a stale value. `config` is reset to defaults on full
+restart.
 
 ### `"wishing"` game state
 
@@ -65,8 +68,21 @@ New state alongside `start | playing | paused | gameover | victory`:
   (instead of immediately spawning the next wave).
 - The canvas shows a "WAVE CLEARED — make a wish" overlay while in `wishing`.
 - The next wave spawns and play resumes when `genie.js` calls a `startNextWave()`
-  function (after a wish is granted or skipped).
+  function (after a wish is granted or skipped). `startNextWave()` does exactly
+  what the current wave transition does (`level++`, `spawnEnemies()`,
+  `spawnBarriers()`, clear `bullets` and `enemyBullets`), then sets
+  `gameState = "playing"`.
 - Without `GENIE_MODE`, waves chain instantly exactly as today.
+- **Pause:** the P key is ignored during `wishing` (there is nothing to pause);
+  pause works normally during combat, as today.
+- **Victory:** clearing level 5 still goes straight to `victory` in genie mode —
+  no wish phase after the final wave.
+- **Death and restart:** wishes are only ever granted between waves, so a mid-wave
+  death with lives remaining just continues the wave with all wishes intact. Game
+  over (or R-restart from any end screen) calls `genie.resetEffects()` as part of
+  the restart path — the new run starts with default `config`, no hooks, and an
+  empty wish list. The "one wish per wave" counter is per-intermission; there is
+  no banking or carry-over.
 
 ### Hook system
 
@@ -88,8 +104,16 @@ const genie = {
   rather than freezing the game.
 - `applyWish(code)` executes the LLM's JavaScript via `new Function(code)` in a
   try/catch. Because `sketch.js` declares its state with top-level `let` in a classic
-  script, wish code can read and write `player`, `enemies`, `bullets`, `config`, etc.
-  directly, and call helpers like `explode()` and `fireBullet()`.
+  script, those bindings live in the global lexical environment, which `new Function`
+  closes over — wish code can read and write `player`, `enemies`, `bullets`, `config`,
+  etc. directly, and call helpers like `explode()` and `fireBullet()`. (Verified in
+  headless Edge: reading, writing, calling, and rebinding top-level `let` bindings
+  from a separate classic script all work. Note this is browser behavior — a Node
+  test would wrongly fail, since Node wraps files in module scope.)
+- `genie.onPhaseChange(phase)` — an optional callback `genie.js` assigns;
+  `sketch.js` invokes it with `"wishing"` or `"combat"` on every transition in or
+  out of the wish phase. This is how the chat panel knows to enable/disable its
+  input — `genie.js` never polls game state.
 - `resetEffects()` is called on restart and game over.
 
 ## Genie client (`genie.js`)
@@ -119,15 +143,19 @@ System prompt establishes:
    **game-state snapshot**: score, lives, level, current `config`, and the list of
    active wishes — so twists can be informed.
 3. The player may chat back and forth freely; the wish is only **spent** when a
-   genie reply contains a code block.
+   genie reply contains a code block. If a reply contains more than one code
+   block, only the **first** counts; the rest are ignored.
 4. Grant: extract the code block → `genie.applyWish(code)` →
-   - **Success:** show a "✨ wish granted" marker in the log; start the next wave
-     after a ~2 second beat.
+   - **Success:** show a "✨ wish granted" marker in the log; the chat input
+     disables immediately, and the next wave starts after a ~2 second beat.
    - **Error:** send the error message back to the model for **one automatic
      retry**. If the retry also fails, the wish *fizzles* (in-character message)
      and the next wave starts anyway.
 5. A **Skip wish** button (visible only during `wishing`) starts the next wave
-   without a wish.
+   without a wish. Pressing Skip while a genie reply is still streaming **aborts
+   the in-flight request** (via `AbortController`) so a late code block can never
+   land mid-combat. Since waves only ever start through grant or Skip, and both
+   close the door behind them, no genie reply can arrive while fighting.
 6. Conversation history persists across waves so the genie remembers earlier wishes.
 
 ## Layout (`genie.html` / `genie.css`)
