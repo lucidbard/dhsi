@@ -79,6 +79,62 @@
         return config.bulletSpeed === 7 && genie.hooks.onDraw.length === 0;
       });
 
+      // --- Task 3: wishing state & startNextWave ---
+      check("clearing a wave enters wishing and fires phase change", () => {
+        let phase = null;
+        genie.onPhaseChange = (p) => { phase = p; };
+        gameState = "playing";
+        level = 1;
+        for (const e of enemies) e.alive = false;
+        checkWinLose();
+        return gameState === "wishing" && phase === "wishing";
+      });
+      check("startNextWave begins next level and fires combat phase", () => {
+        let phase = null;
+        genie.onPhaseChange = (p) => { phase = p; };
+        bullets.push({ x: 0, y: 0, w: 1, h: 1, vy: 0, fromPlayer: true });
+        startNextWave();
+        return level === 2 && gameState === "playing" && phase === "combat" &&
+          enemies.some((e) => e.alive) && bullets.length === 0;
+      });
+      check("clearing level 5 is victory, no wish phase", () => {
+        level = 5;
+        for (const e of enemies) e.alive = false;
+        checkWinLose();
+        return gameState === "victory";
+      });
+      check("onUpdate hook runs once per playing frame", () => {
+        resetGame();
+        gameState = "playing";
+        let ran = 0;
+        genie.hooks.onUpdate.push(() => ran++);
+        draw();
+        genie.hooks.onUpdate.length = 0;
+        return ran === 1;
+      });
+      check("throwing hook is removed and reported", () => {
+        let reported = null;
+        genie.onHookError = (m) => { reported = m; };
+        genie.hooks.onDraw.push(() => { throw new Error("boom"); });
+        gameState = "playing";
+        draw();
+        return genie.hooks.onDraw.length === 0 && reported === "boom";
+      });
+      check("non-Error throw is stringified", () => {
+        const r = genie.applyWish("throw 'no wish for you'");
+        return r.ok === false && r.error === "no wish for you";
+      });
+      check("resetEffects removes wish-added config keys", () => {
+        genie.applyWish("config.gravity = 3;");
+        genie.resetEffects();
+        return !("gravity" in config);
+      });
+      check("wishing frame draws overlay without error", () => {
+        gameState = "wishing";
+        draw();
+        return true;
+      });
+
       report();
     }
   </script>

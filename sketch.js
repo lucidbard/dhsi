@@ -39,13 +39,16 @@ const genie = {
       new Function(code)();
       return { ok: true };
     } catch (err) {
-      return { ok: false, error: err.message };
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
   },
   resetEffects() {
     this.hooks.onUpdate.length = 0;
     this.hooks.onDraw.length = 0;
     this.activeWishes.length = 0;
+    for (const key of Object.keys(config)) {
+      if (!(key in DEFAULT_CONFIG)) delete config[key];
+    }
     Object.assign(config, DEFAULT_CONFIG);
   },
 };
@@ -53,11 +56,14 @@ const genie = {
 // Run wish hooks, dropping any that throw so one bad spell can't freeze the game.
 function runHooks(list) {
   for (let i = list.length - 1; i >= 0; i--) {
+    if (i >= list.length || typeof list[i] !== "function") continue;
     try {
       list[i]();
     } catch (err) {
       list.splice(i, 1);
-      if (genie.onHookError) genie.onHookError(err.message);
+      if (genie.onHookError) {
+        genie.onHookError(err instanceof Error ? err.message : String(err));
+      }
     }
   }
 }
@@ -181,9 +187,9 @@ const keys = {};
 function keyPressed() {
   keys[keyCode] = true;
   if (key === " ") {
-    // Returning false in keyPressed would be cleaner, but p5 also accepts
-    // preventDefault for this. Just gate it on game state.
     if (gameState === "playing") fireBullet();
+    // Don't steal Space from the chat input on genie.html.
+    if (document.activeElement && document.activeElement.tagName === "INPUT") return;
     return false; // prevent the browser from scrolling on space
   }
   if (key === "p" || key === "P") {
@@ -254,6 +260,11 @@ function draw() {
     drawPaused();
     return;
   }
+  if (gameState === "wishing") {
+    drawHUD();
+    drawWishing();
+    return;
+  }
   if (gameState === "gameover") {
     drawHUD();
     drawGameOver();
@@ -271,6 +282,7 @@ function draw() {
   updateEnemies();
   enemyFire();
   updateParticles();
+  runHooks(genie.hooks.onUpdate);
   checkCollisions();
   checkWinLose();
 
@@ -280,6 +292,7 @@ function draw() {
   drawBarriers();
   drawParticles();
   drawHUD();
+  runHooks(genie.hooks.onDraw);
 }
 
 function drawStarField() {
@@ -343,6 +356,22 @@ function drawVictory() {
   fill(255);
   textSize(14);
   text("Level cleared. Press R for the next wave.", width / 2, height / 2 + 20);
+}
+
+function drawWishing() {
+  fill(0, 0, 0, 180);
+  rectMode(CORNER);
+  rect(0, 0, width, height);
+  fill(255, 204, 0);
+  textAlign(CENTER, CENTER);
+  textSize(24);
+  text("WAVE " + level + " CLEARED", width / 2, height / 2 - 30);
+  fill(120, 255, 120);
+  textSize(14);
+  text("Make a wish in the chat panel", width / 2, height / 2 + 10);
+  fill(255);
+  textSize(12);
+  text("(or skip to fight on)", width / 2, height / 2 + 40);
 }
 
 function updatePlayer() {
@@ -592,16 +621,27 @@ function rectsOverlap(a, b) {
 
 function checkWinLose() {
   if (enemies.every((e) => !e.alive)) {
-    level++;
-    if (level > 5) {
+    if (level >= 5) {
       gameState = "victory";
+    } else if (window.GENIE_MODE) {
+      gameState = "wishing";
+      if (genie.onPhaseChange) genie.onPhaseChange("wishing");
     } else {
-      spawnEnemies();
-      spawnBarriers();
-      bullets = [];
-      enemyBullets = [];
+      startNextWave();
     }
   }
+}
+
+// Spawn the next wave. In genie mode genie.js calls this after a wish is
+// granted or skipped; in classic mode it runs immediately on wave clear.
+function startNextWave() {
+  level++;
+  spawnEnemies();
+  spawnBarriers();
+  bullets = [];
+  enemyBullets = [];
+  gameState = "playing";
+  if (genie.onPhaseChange) genie.onPhaseChange("combat");
 }
 
 // Expose the millis-driven shooter tick (currently inline above).

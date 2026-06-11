@@ -17,6 +17,21 @@
       check("barriers spawned", () => barriers.length > 0);
       check("player exists", () => typeof player === "object" && player.x === 240);
 
+      // --- Task 3: classic mode chains waves instantly ---
+      check("wave clear chains instantly in classic mode", () => {
+        gameState = "playing";
+        level = 1;
+        for (const e of enemies) e.alive = false;
+        checkWinLose();
+        return gameState === "playing" && level === 2 && enemies.some((e) => e.alive);
+      });
+      check("victory still triggers after level 5", () => {
+        level = 5;
+        for (const e of enemies) e.alive = false;
+        checkWinLose();
+        return gameState === "victory";
+      });
+
       report();
     }
   </script>
