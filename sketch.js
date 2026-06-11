@@ -187,9 +187,9 @@ const keys = {};
 function keyPressed() {
   keys[keyCode] = true;
   if (key === " ") {
-    if (gameState === "playing") fireBullet();
     // Don't steal Space from the chat input on genie.html.
     if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+    if (gameState === "playing") fireBullet();
     return false; // prevent the browser from scrolling on space
   }
   if (key === "p" || key === "P") {
@@ -620,6 +620,7 @@ function rectsOverlap(a, b) {
 }
 
 function checkWinLose() {
+  if (gameState !== "playing") return;
   if (enemies.every((e) => !e.alive)) {
     if (level >= 5) {
       gameState = "victory";

@@ -135,6 +135,21 @@
         return true;
       });
 
+      check("checkWinLose ignores non-playing states", () => {
+        resetGame();
+        gameState = "gameover";
+        for (const e of enemies) e.alive = false;
+        checkWinLose();
+        const ok = gameState === "gameover";
+        resetGame();
+        gameState = "start";
+        return ok;
+      });
+
+      // Leave a clean slate for checks appended by later tasks.
+      genie.onPhaseChange = null;
+      genie.onHookError = null;
+
       report();
     }
   </script>
