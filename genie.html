@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Invaders — Genie Mode</title>
+  <link rel="stylesheet" href="genie.css" />
+  <script>window.GENIE_MODE = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+</head>
+<body>
+  <main class="genie-layout">
+    <section class="game-side">
+      <h1>SPACE INVADERS <span class="subtitle">genie mode</span></h1>
+      <div id="game-container"></div>
+      <p class="instructions">
+        &larr; / &rarr; or A / D to move &middot; <strong>Space</strong> to shoot &middot;
+        <strong>P</strong> to pause &middot; <strong>R</strong> to restart
+      </p>
+    </section>
+    <aside class="genie-panel">
+      <header class="genie-panel__header">
+        <h2>&#129502; THE GENIE</h2>
+        <p class="genie-status" id="status">connecting&hellip;</p>
+      </header>
+      <ol class="genie-log" id="log" aria-live="polite"></ol>
+      <button class="genie-skip" id="skip" type="button" hidden>
+        Skip wish &mdash; start next wave
+      </button>
+      <form class="genie-form" id="form" autocomplete="off">
+        <input class="genie-input" id="input" type="text"
+               placeholder="the genie sleeps while you fight&hellip;" disabled />
+        <button class="genie-send" id="send" type="submit" disabled>Wish</button>
+      </form>
+    </aside>
+  </main>
+  <script src="sketch.js"></script>
+  <script src="genie.js"></script>
+</body>
+</html>
