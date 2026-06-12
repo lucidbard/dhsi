@@ -16,8 +16,10 @@
 
       // --- Task 1: mutable config replaces tuning consts ---
       check("config exists", () => typeof config === "object" && config !== null);
-      check("config.playerSpeed default", () => config.playerSpeed === 5);
-      check("config.bulletSpeed default", () => config.bulletSpeed === 7);
+      check("config.playerSpeed default", () => config.playerSpeed === 7);
+      check("config.bulletSpeed default", () => config.bulletSpeed === 10);
+      check("config.fireCooldownMs default", () => config.fireCooldownMs === 250);
+      check("config.startingLives default", () => config.startingLives === 5);
       check("config.enemyBulletSpeed default", () => config.enemyBulletSpeed === 4);
       check("config.enemyRows default", () => config.enemyRows === 5);
       check("config.enemyCols default", () => config.enemyCols === 8);
@@ -25,7 +27,7 @@
       check("config.enemyVSpacing default", () => config.enemyVSpacing === 40);
       check("config.enemyStartY default", () => config.enemyStartY === 80);
       check("config.enemyBaseDrop default", () => config.enemyBaseDrop === 12);
-      check("config.enemyFireChance default", () => config.enemyFireChance === 0.008);
+      check("config.enemyFireChance default", () => config.enemyFireChance === 0.006);
       check("config.enemyShootersPerRow default", () => config.enemyShootersPerRow === 2);
       check("old consts deleted", () =>
         typeof PLAYER_SPEED === "undefined" && typeof ENEMY_FIRE_CHANCE === "undefined");
@@ -70,17 +72,18 @@
       check("fireBullet reads config live", () => {
         config.bulletSpeed = 99;
         bullets.length = 0;
+        lastPlayerShot = -9999;
         fireBullet();
         const ok = bullets.length === 1 && bullets[0].vy === -99;
         bullets.length = 0;
-        config.bulletSpeed = 7;
+        config.bulletSpeed = 10;
         return ok;
       });
       check("resetEffects restores config and clears hooks/wishes", () => {
         genie.hooks.onUpdate.push(() => {});
         genie.activeWishes.push({ text: "t", code: "" });
         genie.resetEffects();
-        return config.playerSpeed === 5 &&
+        return config.playerSpeed === 7 &&
           genie.hooks.onUpdate.length === 0 &&
           genie.activeWishes.length === 0;
       });
@@ -88,7 +91,33 @@
         config.bulletSpeed = 99;
         genie.hooks.onDraw.push(() => {});
         resetGame();
-        return config.bulletSpeed === 7 && genie.hooks.onDraw.length === 0;
+        return config.bulletSpeed === 10 && genie.hooks.onDraw.length === 0;
+      });
+
+      // --- Modernize: rapid fire + friendlier numbers ---
+      check("rapid fire allows multiple bullets on screen", () => {
+        bullets.length = 0;
+        lastPlayerShot = -9999;
+        fireBullet();
+        lastPlayerShot = -9999;
+        fireBullet();
+        const ok = bullets.length === 2;
+        bullets.length = 0;
+        return ok;
+      });
+      check("fire cooldown blocks immediate re-fire", () => {
+        bullets.length = 0;
+        lastPlayerShot = -9999;
+        fireBullet();
+        fireBullet();
+        const ok = bullets.length === 1;
+        bullets.length = 0;
+        lastPlayerShot = -9999;
+        return ok;
+      });
+      check("resetGame grants startingLives", () => {
+        resetGame();
+        return lives === 5;
       });
 
       // --- Task 3: wishing state & startNextWave ---

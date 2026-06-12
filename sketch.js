@@ -1,7 +1,7 @@
 // Space Invaders — a classic arcade game in p5.js.
 // Controls:
 //   Left/Right arrows or A/D : move the player ship
-//   Space                    : fire a bullet
+//   Space                    : fire (hold for rapid fire)
 //   P                        : pause / resume
 //   R                        : restart after game over
 
@@ -12,8 +12,10 @@ const GAME_HEIGHT = 640;
 // Tunable gameplay values. Genie Mode wishes may rewrite these at runtime;
 // genie.resetEffects() restores them from DEFAULT_CONFIG.
 const DEFAULT_CONFIG = Object.freeze({
-  playerSpeed: 5,
-  bulletSpeed: 7,
+  playerSpeed: 7,
+  bulletSpeed: 10,
+  fireCooldownMs: 250, // min delay between player shots (rapid fire)
+  startingLives: 5,
   enemyBulletSpeed: 4,
   enemyRows: 5,
   enemyCols: 8,
@@ -21,7 +23,7 @@ const DEFAULT_CONFIG = Object.freeze({
   enemyVSpacing: 40,
   enemyStartY: 80,
   enemyBaseDrop: 12,
-  enemyFireChance: 0.008, // per enemy per frame
+  enemyFireChance: 0.006, // per enemy per frame
   enemyShootersPerRow: 2,
 });
 const config = { ...DEFAULT_CONFIG };
@@ -81,6 +83,7 @@ let lives = 3;
 let level = 1;
 let gameState = "start"; // "start" | "playing" | "paused" | "gameover" | "victory"
 let lastShooterPick = 0;
+let lastPlayerShot = 0;
 let enemyDir = 1; // 1 = right, -1 = left
 let enemySpeed = 1;
 let stepTick = 0;
@@ -120,7 +123,7 @@ function resetGame() {
   barriers = [];
   enemies = [];
   score = 0;
-  lives = 3;
+  lives = config.startingLives;
   level = 1;
   enemyDir = 1;
   enemySpeed = 1;
@@ -211,10 +214,9 @@ function keyReleased() {
 }
 
 function fireBullet() {
-  // Only one player bullet on screen at a time, like the original.
-  for (const b of bullets) {
-    if (b.fromPlayer) return;
-  }
+  // Rapid fire: a short cooldown instead of the classic one-bullet limit.
+  if (millis() - lastPlayerShot < config.fireCooldownMs) return;
+  lastPlayerShot = millis();
   bullets.push({
     x: player.x,
     y: player.y - player.h / 2,
@@ -383,6 +385,7 @@ function updatePlayer() {
   if (keys[RIGHT_ARROW] || keys[68]) {
     player.x += config.playerSpeed;
   }
+  if (keys[32]) fireBullet(); // hold Space for auto-fire
   player.x = constrain(player.x, player.w / 2, width - player.w / 2);
 }
 
