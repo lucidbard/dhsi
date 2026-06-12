@@ -130,8 +130,10 @@ function resetGame() {
 
 function spawnEnemies() {
   enemies = [];
+  // Early waves start smaller: 3 rows on wave 1, 4 on wave 2, full size after.
+  const rows = Math.max(1, config.enemyRows - Math.max(0, 3 - level));
   const startX = (width - (config.enemyCols - 1) * config.enemyHSpacing) / 2;
-  for (let r = 0; r < config.enemyRows; r++) {
+  for (let r = 0; r < rows; r++) {
     // Top rows are worth more (squid/crab/crab/crab/crab in the original).
     const points = [40, 30, 20, 20, 10][r % 5];
     for (let c = 0; c < config.enemyCols; c++) {

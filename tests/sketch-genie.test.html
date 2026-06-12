@@ -29,12 +29,24 @@
       check("config.enemyShootersPerRow default", () => config.enemyShootersPerRow === 2);
       check("old consts deleted", () =>
         typeof PLAYER_SPEED === "undefined" && typeof ENEMY_FIRE_CHANCE === "undefined");
-      check("game still sets up (5x8 enemies spawned)", () => enemies.length === 40);
-      check("config drives spawning", () => {
+      check("first wave spawns smaller (3x8 enemies)", () => enemies.length === 24);
+      check("wave size ramps up by level", () => {
+        const sizes = [];
+        for (level = 1; level <= 3; level++) {
+          spawnEnemies();
+          sizes.push(enemies.length);
+        }
+        level = 1;
+        spawnEnemies();
+        return sizes.join(",") === "24,32,40";
+      });
+      check("config drives spawning (at full-size waves)", () => {
+        level = 3;
         config.enemyRows = 2;
         spawnEnemies();
         const ok = enemies.length === 16;
         config.enemyRows = 5;
+        level = 1;
         spawnEnemies();
         return ok;
       });

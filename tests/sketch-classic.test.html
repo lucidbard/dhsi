@@ -13,7 +13,7 @@
 
       // --- Task 1: refactor must not break the classic game ---
       check("GENIE_MODE is off", () => !window.GENIE_MODE);
-      check("game sets up (5x8 enemies spawned)", () => enemies.length === 40);
+      check("game sets up with a smaller first wave (3x8)", () => enemies.length === 24);
       check("barriers spawned", () => barriers.length > 0);
       check("player exists", () => typeof player === "object" && player.x === 240);
 
