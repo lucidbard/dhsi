@@ -191,6 +191,7 @@ function beginNextWave(delayMs) {
 }
 
 async function grantWish(wishText, code) {
+  if (gameState !== "wishing") return; // skipped before the spell landed
   wishSpent = true;
   let result = genie.applyWish(code);
 
@@ -211,6 +212,7 @@ async function grantWish(wishText, code) {
       const reply = await streamReply(currentAbort.signal);
       history.push({ role: "assistant", content: reply });
       const code2 = extractCodeBlock(reply);
+      if (gameState !== "wishing") return; // skipped while the genie rewove
       result = code2
         ? genie.applyWish(code2)
         : { ok: false, error: "no code block in retry" };

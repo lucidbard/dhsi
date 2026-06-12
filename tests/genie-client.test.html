@@ -44,6 +44,16 @@
         return skipBtn.hidden === true && input.disabled === true;
       });
       check("genie.js wired the phase callback", () => genie.onPhaseChange === setPhase);
+      check("grantWish refuses to cast outside wishing phase", () => {
+        let called = 0;
+        const realApply = genie.applyWish;
+        genie.applyWish = () => { called++; return { ok: true }; };
+        gameState = "playing";
+        grantWish("test wish", "1+1");
+        genie.applyWish = realApply;
+        gameState = "start";
+        return called === 0;
+      });
       report();
     }
   </script>
