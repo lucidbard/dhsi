@@ -167,17 +167,19 @@ async function streamReply(signal, extraMessages = []) {
       const line = buffer.slice(0, nl).trim();
       buffer = buffer.slice(nl + 1);
       if (!line) continue;
+      let chunk;
       try {
-        const chunk = JSON.parse(line);
-        if (chunk.error) throw new Error(chunk.error);
-        const piece = (chunk.message && chunk.message.content) || "";
-        if (piece) {
-          full += piece;
-          botEl.textContent = full;
-          logEl.scrollTop = logEl.scrollHeight;
-        }
+        chunk = JSON.parse(line);
       } catch {
         // Ignore partial / malformed lines; completed on a later chunk.
+        continue;
+      }
+      if (chunk.error) throw new Error(chunk.error);
+      const piece = (chunk.message && chunk.message.content) || "";
+      if (piece) {
+        full += piece;
+        botEl.textContent = full;
+        logEl.scrollTop = logEl.scrollHeight;
       }
     }
   }

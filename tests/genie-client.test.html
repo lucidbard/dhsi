@@ -26,6 +26,7 @@
       setTimeout(() => preflight().then(run), 100));
 
     let retryHistoryClean = null;
+    let streamErrorSurfaced = null;
     async function preflight() {
       // Exercise the fail-once-then-succeed retry flow with a mocked fetch.
       let calls = 0;
@@ -39,10 +40,20 @@
       window.fetch = async () => new Response(ndjson, { status: 200 });
       gameState = "wishing";
       await grantWish("test wish", "bad code");
-      window.fetch = realFetch;
       gameState = "start";
       genie.applyWish = () => ({ ok: true });
       retryHistoryClean = !history.some((m) => m.content.includes("[Your spell failed"));
+
+      // Exercise the in-stream Ollama error path.
+      window.fetch = async () =>
+        new Response(JSON.stringify({ error: "model exploded" }) + "\n", { status: 200 });
+      try {
+        await streamReply(null);
+        streamErrorSurfaced = "no-throw";
+      } catch (e) {
+        streamErrorSurfaced = e.message;
+      }
+      window.fetch = realFetch;
     }
 
     function run() {
@@ -77,6 +88,8 @@
       });
       check("retry succeeds and keeps synthetic instruction out of history", () =>
         retryHistoryClean === true);
+      check("in-stream Ollama error propagates", () =>
+        streamErrorSurfaced === "model exploded");
       report();
     }
   </script>
