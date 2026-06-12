@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <!-- Minimal DOM + game stubs so genie.js loads without sketch.js/Ollama -->
+  <p id="status"></p>
+  <ol id="log"></ol>
+  <button id="skip" hidden></button>
+  <form id="form"><input id="input" /><button id="send"></button></form>
+  <script>
+    var genie = {
+      hooks: { onUpdate: [], onDraw: [] },
+      activeWishes: [],
+      onPhaseChange: null,
+      onHookError: null,
+      applyWish: () => ({ ok: true }),
+    };
+    var gameState = "start";
+    var score = 0, lives = 3, level = 1;
+    var config = {};
+    function startNextWave() {}
+  </script>
+  <script src="../genie.js"></script>
+  <script src="harness.js"></script>
+  <script>
+    window.addEventListener("load", () => setTimeout(run, 100));
+
+    function run() {
+      check("extractCodeBlock finds a js block", () =>
+        extractCodeBlock("Granted!\n```js\nconfig.x = 1;\n```\nEnjoy.") === "config.x = 1;");
+      check("extractCodeBlock finds a javascript block", () =>
+        extractCodeBlock("```javascript\nlives++;\n```") === "lives++;");
+      check("extractCodeBlock finds a bare block", () =>
+        extractCodeBlock("```\nscore = 9;\n```") === "score = 9;");
+      check("extractCodeBlock takes only the first block", () =>
+        extractCodeBlock("```js\nfirst();\n```\nand\n```js\nsecond();\n```") === "first();");
+      check("extractCodeBlock returns null without code", () =>
+        extractCodeBlock("no wish for you, mortal") === null);
+      check("setPhase wishing reveals skip button", () => {
+        setPhase("wishing");
+        return skipBtn.hidden === false;
+      });
+      check("setPhase combat hides skip and disables input", () => {
+        setPhase("combat");
+        return skipBtn.hidden === true && input.disabled === true;
+      });
+      check("genie.js wired the phase callback", () => genie.onPhaseChange === setPhase);
+      report();
+    }
+  </script>
+</body>
+</html>
