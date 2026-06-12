@@ -123,7 +123,7 @@ function setPhase(phase) {
         sendBtn.disabled = false;
         input.placeholder = "make a wish…";
         input.focus();
-      } else if (!ollamaUp) {
+      } else if (gameState === "wishing" && !ollamaUp) {
         input.placeholder = "the genie is unreachable — skip to play on";
       }
     });
@@ -137,13 +137,13 @@ function setPhase(phase) {
 }
 
 // ---------- Ollama streaming (NDJSON), adapted from chat.js ----------
-async function streamReply(signal) {
+async function streamReply(signal, extraMessages = []) {
   const res = await fetch(OLLAMA_BASE + "/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: MODEL,
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history, ...extraMessages],
       stream: true,
     }),
     signal,
@@ -169,6 +169,7 @@ async function streamReply(signal) {
       if (!line) continue;
       try {
         const chunk = JSON.parse(line);
+        if (chunk.error) throw new Error(chunk.error);
         const piece = (chunk.message && chunk.message.content) || "";
         if (piece) {
           full += piece;
@@ -201,15 +202,15 @@ async function grantWish(wishText, code) {
       "system",
       "the spell sputters (" + result.error + ") — the genie reweaves it…"
     );
-    history.push({
+    const retryMsg = {
       role: "user",
       content:
         "[Your spell failed with this JavaScript error: " + result.error +
         ". Reply with a single corrected " + FENCE + "js code block - same wish, same twist.]",
-    });
+    };
     try {
       currentAbort = new AbortController();
-      const reply = await streamReply(currentAbort.signal);
+      const reply = await streamReply(currentAbort.signal, [retryMsg]);
       history.push({ role: "assistant", content: reply });
       const code2 = extractCodeBlock(reply);
       if (gameState !== "wishing") return; // skipped while the genie rewove

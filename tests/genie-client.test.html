@@ -22,7 +22,28 @@
   <script src="../genie.js"></script>
   <script src="harness.js"></script>
   <script>
-    window.addEventListener("load", () => setTimeout(run, 100));
+    window.addEventListener("load", () =>
+      setTimeout(() => preflight().then(run), 100));
+
+    let retryHistoryClean = null;
+    async function preflight() {
+      // Exercise the fail-once-then-succeed retry flow with a mocked fetch.
+      let calls = 0;
+      genie.applyWish = () => (++calls === 1
+        ? { ok: false, error: "boom" }
+        : { ok: true });
+      const ndjson =
+        JSON.stringify({ message: { content: "Rewoven!\n```js\nfixed();\n```" } }) + "\n" +
+        JSON.stringify({ done: true }) + "\n";
+      const realFetch = window.fetch;
+      window.fetch = async () => new Response(ndjson, { status: 200 });
+      gameState = "wishing";
+      await grantWish("test wish", "bad code");
+      window.fetch = realFetch;
+      gameState = "start";
+      genie.applyWish = () => ({ ok: true });
+      retryHistoryClean = !history.some((m) => m.content.includes("[Your spell failed"));
+    }
 
     function run() {
       check("extractCodeBlock finds a js block", () =>
@@ -54,6 +75,8 @@
         gameState = "start";
         return called === 0;
       });
+      check("retry succeeds and keeps synthetic instruction out of history", () =>
+        retryHistoryClean === true);
       report();
     }
   </script>
